@@ -12,9 +12,12 @@ class BData():
         self.VGG = np.array(scipy.io.loadmat(VGG_location)["features"])
 
     def EDA(self):
-        p = [f"p{i}" for i in range((self.skeleton[:, 0]).shape[0]-3)]
-        index = ["f", "x", "y", *p]
-        skeleton_df = pd.DataFrame(self.skeleton.transpose(), columns=index)
+
+        # p = [f"p{i}" for i in range((self.skeleton[:, 0]).shape[0]-3)]
+
+        index = ["x", "y", "p"]*round((self.skeleton[:, 0].shape[0]-1)/3)
+        skeleton_df = pd.DataFrame(
+            self.skeleton.transpose(), columns=["f", *index])
 
         ts = skeleton_df.plot.scatter(x='x', y='y')
         ts.plot()
