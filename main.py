@@ -16,12 +16,12 @@ class BData():
         # p = [f"p{i}" for i in range((self.skeleton[:, 0]).shape[0]-3)]
 
         # index = ["x", "y", "p"]*round((self.skeleton[:, 0].shape[0]-1)/3)
-        index = [j+str(i) for j in ["x", "y", "p"]
+        index = [j+str(i+1) for j in ["x", "y", "p"]
                  for i in range(round((self.skeleton[:, 0].shape[0]-1)/3))]
         skeleton_df = pd.DataFrame(
             self.skeleton.transpose(), columns=["f", *index])
 
-        ts = skeleton_df.plot.scatter(x='x17', y='y17')
+        ts = skeleton_df.plot.scatter(x='x0', y='y0')
         ts.plot()
         plt.show()
         VGG_df = pd.DataFrame(self.VGG)
