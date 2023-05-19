@@ -21,21 +21,23 @@ class BData():
         skeleton_df = pd.DataFrame(
             self.skeleton.transpose(), columns=["f", *index])
 
-        ts = skeleton_df.plot.scatter(x='x0', y='y0')
+        ts = skeleton_df.plot.scatter(x='x17', y='y17')
         ts.plot()
         plt.show()
         VGG_df = pd.DataFrame(self.VGG)
         VGG_df.info()
 
-    def PCA(self):
-        pass
+    def SVD(self, r=5):
+
+        U, S, V = np.linalg.svd(self.skeleton, full_matrices=False)
+        self.x_aprox = (U[:, :r] * S[:r]) @ Vt[:r, :]
 
 
 def main():
     data = BData("Data/girosmallveryslow2_openpose_complete.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat")
-    # data.EDA()
-    data.PCA()
+    data.EDA()
+    data.SVD()
 
 
 if __name__ == '__main__':
