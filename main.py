@@ -21,7 +21,7 @@ class BData():
         skeleton_df = pd.DataFrame(
             self.skeleton.transpose(), columns=["f", *index])
 
-        ts = skeleton_df.plot.scatter(x='x0', y='y0')
+        ts = skeleton_df.plot.scatter(x='x1', y='y1')
         ts.plot()
         plt.show()
         VGG_df = pd.DataFrame(self.VGG)
@@ -29,8 +29,10 @@ class BData():
 
     def SVD(self, r=5):
 
-        U, S, V = np.linalg.svd(self.skeleton, full_matrices=False)
-        self.x_aprox = (U[:, :r] * S[:r]) @ Vt[:r, :]
+        U, S, Vt = np.linalg.svd(self.skeleton, full_matrices=False)
+        self.aprox = (U[:, :r] * S[:r]) @ Vt[:r, :]
+        plt.scatter(self.aprox[0], self.aprox[1])
+        plt.show()
 
 
 def main():
