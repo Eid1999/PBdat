@@ -18,28 +18,22 @@ class BData():
         self.VGG = np.array(scipy.io.loadmat(
             VGG_location)["features"]).transpose()
 
-    def EDA(self):
+    def EDA_VGG(self):
         self.VGG_df = pd.DataFrame(self.VGG)
+
+        # print(VGG_df.describe())
+
+    def EDA_skelly(self):
         index = [j+str(i+1) for j in ["x", "y", "p"]
                  for i in range(int((self.skeleton[0, :].shape[0]-1)/3))]
         self.skeleton_df = pd.DataFrame(
             self.skeleton, columns=["f", *index])
-        self.preprocess_matrices()
-
-        # ts = skeleton_df.plot.scatter(x='x1', y='y1')
-        # ts.plot()
-        # plt.show()
-
-        # print(VGG_df.describe())
-        # correlation = skeleton_df.corr()
-        # sns.heatmap(correlation, xticklabels=correlation.index,
-        # yticklabels = correlation.index, annot = True)
-        # plt.show()
-    def preprocess_matrices(self):
         max_frame = max([
             self.skeleton_df[self.skeleton_df.f == i].shape[0] for i in range(int(self.skeleton_df["f"].max()))])
-
-        preprocessed_matrices = []
+        # ts = self.skeleton_df.plot.scatter(x='x1', y='y1')
+        # ts.plot()
+        # plt.show()
+        skelly_aux = []
         for i in range(int(self.skeleton_df["f"].max())):
             skelly = self.skeleton_df[self.skeleton_df.f == i].drop(
                 columns="f")
@@ -50,9 +44,14 @@ class BData():
 
             # Flatten the matrices into vectors
             vector = np.reshape(skelly, -1)
-            preprocessed_matrices.append(vector)
+            skelly_aux.append(vector)
 
-        self.skeleton_df = pd.DataFrame(preprocessed_matrices).squeeze()
+        self.skeleton_df = pd.DataFrame(skelly_aux).squeeze()
+
+        # correlation = self.skeleton_df.corr()
+        # sns.heatmap(correlation, xticklabels=correlation.columns,
+        # yticklabels=correlation.index, annot=True)
+        # plt.show()
 
     def PCA_VGG(self):
         steps = [('scaling', StandardScaler()),
@@ -92,9 +91,10 @@ class BData():
 def main():
     data = BData("Data/girosmallveryslow2_openpose.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat")
-    data.EDA()
-    # data.PCA_VGG()
-    # data.kmeans(data.VGG_df)
+    data.EDA_VGG()
+    data.PCA_VGG()
+    data.kmeans(data.VGG_df)
+    data.EDA_skelly()
     data.PCA_skelly()
     data.kmeans(data.skeleton_df)
 
