@@ -24,6 +24,7 @@ class BData():
                  for i in range(int((self.skeleton[0, :].shape[0]-1)/3))]
         self.skeleton_df = pd.DataFrame(
             self.skeleton, columns=["f", *index])
+        self.preprocess_matrices()
 
         # ts = skeleton_df.plot.scatter(x='x1', y='y1')
         # ts.plot()
@@ -34,6 +35,24 @@ class BData():
         # sns.heatmap(correlation, xticklabels=correlation.index,
         # yticklabels = correlation.index, annot = True)
         # plt.show()
+    def preprocess_matrices(self):
+        max_frame = max([
+            self.skeleton_df[self.skeleton_df.f == i].shape[0] for i in range(int(self.skeleton_df["f"].max()))])
+
+        preprocessed_matrices = []
+        for i in range(int(self.skeleton_df["f"].max())):
+            skelly = self.skeleton_df[self.skeleton_df.f == i].drop(
+                columns="f")
+
+            if skelly.shape[0] < max_frame:
+                skelly = np.pad(
+                    skelly, ((0, max_frame - skelly.shape[0]), (0, 0)), mode='constant')
+
+            # Flatten the matrices into vectors
+            vector = np.reshape(skelly, -1)
+            preprocessed_matrices.append(vector)
+
+        self.skeleton_df = pd.DataFrame(preprocessed_matrices).squeeze()
 
     def PCA_VGG(self):
         steps = [('scaling', StandardScaler()),
@@ -47,27 +66,22 @@ class BData():
         self.VGG_df = pd.DataFrame(reduced[:, 0:2])
 
     def PCA_skelly(self):
-        reduced = []
+
+        skelly = 0
         steps = [('scaling', StandardScaler()),
                  ('pca', PCA(n_components=0.85))]
-        for i in range(int(self.skeleton_df["f"].max())):
-            skelly = self.skeleton_df[self.skeleton_df.f == i].drop(
-                columns="f")
-            if skelly.shape[0] > 1:
-                pipeline = Pipeline(steps)
+        pipeline = Pipeline(steps)
+        pipeline.fit(self.skeleton_df)
 
-                pipeline.fit(skelly)
-                reduced.append(pipeline.inverse_transform(
-                    pipeline.transform(skelly))[0])
-
-        self.skeleton_df = pd.DataFrame(reduced)
+        self.skeleton_df = pipeline.inverse_transform(
+            pipeline.transform(self.skeleton_df))
 
     def kmeans(self, df):
         km = KMeans(n_clusters=2, n_init="auto").fit(df)
         clusters = km.cluster_centers_
         plt.figure(num=None, figsize=(10, 10), dpi=100,
                    facecolor='w', edgecolor='k')
-        plt.scatter(df[:500][0], df[:500][1], alpha=0.25, s=100, color='red')
+        plt.scatter(df[:][0], df[:][1], alpha=0.25, s=100, color='red')
         plt.scatter(clusters[:, 0], clusters[:, 1], s=100000, alpha=0.30)
 
         # print(y)
@@ -76,7 +90,7 @@ class BData():
 
 
 def main():
-    data = BData("Data/girosmallveryslow2_openpose_complete.mat",
+    data = BData("Data/girosmallveryslow2_openpose.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat")
     data.EDA()
     # data.PCA_VGG()
