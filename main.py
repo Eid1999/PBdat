@@ -11,12 +11,34 @@ from sklearn.cluster import KMeans
 
 
 class BData():
-    def __init__(self, skeleton_location, VGG_location):
+    def __init__(self, skeleton_location, VGG_location, video_location):
         self.skelly = []
+        self.video = []
+        self.load_video(video_location)
         self.skeleton = np.array(
             scipy.io.loadmat(skeleton_location)["skeldata"])[:, 1:].transpose()
         self.VGG = np.array(scipy.io.loadmat(
             VGG_location)["features"]).transpose()
+
+    def load_video(self, video_location):
+        cap = cv2.VideoCapture(video_location)
+        if (cap.isOpened() == False):
+            print("Error opening video file")
+            return
+        ret = True
+        while ret:
+            # Capture frame-by-frame
+            ret, frame = cap.read()
+            # Display the resulting frame
+            # cv2.imshow('Frame', frame)
+            self.video.append(frame)
+
+        # When everything done, release
+        # the video capture object
+        cap.release()
+
+        # Closes all the frames
+        cv2.destroyAllWindows()
 
     def EDA_VGG(self):
         self.VGG_df = pd.DataFrame(self.VGG)
@@ -74,7 +96,7 @@ class BData():
             pipeline.transform(self.skeleton_df))
 
     def kmeans(self, df, k=10):
-        self.cluster_number(df)
+        # self.cluster_number(df)
         km = KMeans(n_clusters=k, n_init="auto").fit(df)
         clusters = km.cluster_centers_
         plt.figure(num=None, figsize=(10, 10), dpi=100,
@@ -102,8 +124,9 @@ class BData():
 
 
 def main():
-    data = BData("Data/girosmallveryslow2_openpose.mat",
-                 "Data/girosmallveryslow2_vggfeatures.mat")
+    data = BData("Data/girosmallveryslow2_openpose_complete.mat",
+                 "Data/girosmallveryslow2_vggfeatures.mat",
+                 "Data/girosmallveryslow2.mp4")
     data.EDA_VGG()
     data.PCA_VGG()
     data.kmeans(data.VGG_pca, k=10)
