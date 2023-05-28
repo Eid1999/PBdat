@@ -8,18 +8,20 @@ from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
-
+import cv2
+import os
 # %%
 
 
 class BData():
-    def __init__(self, skeleton_location, VGG_location):
+    def __init__(self, skeleton_location, VGG_location, video_location):
         print("Loading data")
         self.skelly = []
         self.skeleton = np.array(
             scipy.io.loadmat(skeleton_location)["skeldata"])[:, 1:].transpose()
         self.VGG = np.array(scipy.io.loadmat(
             VGG_location)["features"]).transpose()
+        self.load_video(video_location)
 
     def center_data(self, df):
         print()
@@ -78,47 +80,13 @@ class BData():
                 mean = skelly.mean(axis=0)
                 # autocorrolation = skelly.apply(
                 #    lambda col: col.autocorr(1), axis=0){i}")
-            #     mean_string.append(f"mean_Y{i}")
-            #     autocorrolation_string.append(f"autocorr_X{i}")
-            #     autocorrolation_string.append(f"autocorr_Y{i}")
 
-            # # pad the data with 0s to have the same number of frames
-            # if skelly.shape[0] < max_frame:
-            #     skelly = np.pad(
-            #         skelly, ((0, max_frame - skelly.shape[0]), (0, 0)), mode='constant')
-
-                # mean_string = []
             autocorrolation_string = []
 
-            # for i in range(1, 19):
-            #     mean.append(skelly[f"x{i}"].mean())
-            #     mean.append(skelly[f"y{i}"].mean())
-            #     autocorrolation.append(skelly[f"x{i}"].autocorr())
-            #     autocorrolation.append(skelly[f"y{i}"].autocorr())
-            #     mean_string.append(f"mean_X{i}")
-            #     mean_string.append(f"mean_Y{i}")
-            #     autocorrolation_string.append(f"autocorr_X{i}")
-            #     autocorrolation_string.append(f"autocorr_Y{i}")
-
-            # # pad the data with 0s to have the same number of frames
-            # if skelly.shape[0] < max_frame:
-            #     skelly = np.pad(
-            #         skelly, ((0, max_frame - skelly.shape[0]), (0, 0)), mode='constant')
-
-            # Flatten the matrices into vectors
-            # vector = np.reshape(skelly, -1)
             skelly_aux.append([n, *mean])
 
-        print(self.skeleton_df.describe())
-
-        # skeleton_df is a dataframe with the skeleton data of all frames
         self.skeleton_df = pd.DataFrame(
             skelly_aux)
-
-        # correlation = self.skeleton_df.corr()
-        # sns.heatmap(correlation, xticklabels=correlation.columns,
-        # yticklabels=correlation.index, annot=True)
-        # plt.show()
 
     def PCA_VGG(self):
         print()
@@ -152,20 +120,17 @@ class BData():
         self.skeleton_df = pd.DataFrame(reduced)
         print(np.linalg.matrix_rank(self.skeleton_df))
 
-    def kmeans(self, df):
+    def kmeans(self, df, n_clusters=10):
         print()
         print("Kmeans")
         # apply kmeans with 6 clusters
-        km = KMeans(n_clusters=6, n_init="auto").fit(df)
+        km = KMeans(n_clusters=n_clusters, n_init="auto").fit(df)
         # get the centroids of each cluster
         clusters = km.cluster_centers_
         # plot the data
         plt.figure(num=None, figsize=(10, 10), dpi=100,
                    facecolor='w', edgecolor='k')
-        # plt.scatter(df[:][0], df[:][1], alpha=0.25, s=100, cmap='rainbow')
-        # plt.scatter(clusters[:, 0], clusters[:, 1], s=100000, alpha=0.30)
-        # plot each cluster with a different color
-        # 3d plot
+
         ax = plt.subplot(111, projection='3d')
         # another plot but 2d
         for i in range(6):
@@ -188,6 +153,14 @@ class BData():
             print("The frame with the minimum distance to the centroid is " + str(min_frame) + " so the frame is in the minute " +
                   str(round(min_frame/60)) + " and second " + str(min_frame % 60) + " of the video")
         plt.show()
+        for i, image in enumerate(self.video):
+
+            if i > len(km.labels_)-1:
+                break
+            label = km.labels_[i]
+            cluster_folder = f'cluster{km.labels_[i]}'
+            os.makedirs(cluster_folder, exist_ok=True)
+            cv2.imwrite(f"{cluster_folder}/{i}.jpg", image)
 
     def t_SNE(self, df):
         print()
@@ -201,20 +174,46 @@ class BData():
         plt.scatter(tsne[:, 0], tsne[:, 1], alpha=0.25, s=100, cmap='rainbow')
         plt.show()
 
+    def load_video(self, video_location):
+        print("\nLoading Video")
+        # Open the video fie
+        video = cv2.VideoCapture(video_location)
+        self.video = []
 
+        # Check if the video was successfully opened
+        if not video.isOpened():
+            print('Error opening video file')
+            return
+
+        # Read and Save frames from the video
+        while True:
+            # Read a frame from the video
+            ret, frame = video.read()
+
+            if not ret:
+                break
+
+            # Save the frame
+            self.video.append(frame)
+
+        video.release()
+        cv2.destroyAllWindows()
 # %%
+
+
 def main():
     data = BData("Data/girosmallveryslow2_openpose_complete.mat",
-                 "Data/girosmallveryslow2_vggfeatures.mat")
-    data.EDA_VGG()
-    data.PCA_VGG()
-    data.VGG_df = data.center_data(data.VGG_df)
-    data.kmeans(data.VGG_df)
+                 "Data/girosmallveryslow2_vggfeatures.mat",
+                 "Data/girosmallveryslow2.mp4")
+    # data.EDA_VGG()
+    # data.PCA_VGG()
+    # data.VGG_df = data.center_data(data.VGG_df)
+    # ata.kmeans(data.VGG_df)
     data.EDA_skelly()
     data.PCA_skelly()
     data.skeleton_df = data.center_data(data.skeleton_df)
     data.kmeans(data.skeleton_df)
-    data.t_SNE(data.VGG_df)
+    # data.t_SNE(data.VGG_df)
     data.t_SNE(data.skeleton_df)
 
 
