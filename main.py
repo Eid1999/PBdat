@@ -58,6 +58,7 @@ class BData():
             # drop the p of the joints
             self.skeleton_df = self.skeleton_df.drop(
                 columns=["p"+str(i+1)])
+
         skelly_aux = []
         for i in range(int(self.skeleton_df["f"].max())):
             # skelly is a dataframe with the skeleton data of the frame i
@@ -68,7 +69,7 @@ class BData():
             if middle_point.shape[1] == 0:
                 n = 0
                 mean = [0]*34
-                autocorrolation = [0]*34
+                variance = [0]*34
 
             else:
                 n = len(middle_point)
@@ -77,13 +78,13 @@ class BData():
                     -1, middle_point.shape[1]*2)
                 skelly = ((skelly-middle_point.reshape(1, -1))
                           ).transpose().reshape(-1, 34)
-                mean = skelly.mean(axis=0)
-                # autocorrolation = skelly.apply(
-                #    lambda col: col.autocorr(1), axis=0){i}")
+                mean = skelly.mean(axis=0) if len(skelly) != 0 else 0
 
-            autocorrolation_string = []
+                variance = skelly.var(axis=0)
 
-            skelly_aux.append([n, *mean])
+            # autocorrolation_string = []
+
+            skelly_aux.append([n, *mean, *variance])
 
         self.skeleton_df = pd.DataFrame(
             skelly_aux)
