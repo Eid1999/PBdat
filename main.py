@@ -78,7 +78,7 @@ class BData():
                     -1, middle_point.shape[1]*2)
                 skelly = ((skelly-middle_point.reshape(1, -1))
                           ).transpose().reshape(-1, 34)
-                mean = skelly.mean(axis=0) if len(skelly) != 0 else 0
+                mean = skelly.mean(axis=0)
 
                 variance = skelly.var(axis=0)
 
@@ -121,7 +121,7 @@ class BData():
         self.skeleton_df = pd.DataFrame(reduced)
         print(np.linalg.matrix_rank(self.skeleton_df))
 
-    def kmeans(self, df, n_clusters=10):
+    def kmeans(self, df, n_clusters=15):
         print()
         print("Kmeans")
         # apply kmeans with 6 clusters
@@ -154,14 +154,20 @@ class BData():
             print("The frame with the minimum distance to the centroid is " + str(min_frame) + " so the frame is in the minute " +
                   str(round(min_frame/60)) + " and second " + str(min_frame % 60) + " of the video")
         plt.show()
-        for i, image in enumerate(self.video):
-
-            if i > len(km.labels_)-1:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        height, width, layers = self.video[1].shape
+        # Codec (e.g., 'XVID', 'MJPG', 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fps = 5.0
+        video = [cv2.VideoWriter(f"Videos/cluster{i}.mp4", fourcc, fps, (width, height))
+                 for i in range(max(km.labels_)+1)]
+        for k, image in enumerate(self.video):
+            if k > len(km.labels_)-1:
                 break
-            label = km.labels_[i]
-            cluster_folder = f'cluster{km.labels_[i]}'
-            os.makedirs(cluster_folder, exist_ok=True)
-            cv2.imwrite(f"{cluster_folder}/{i}.jpg", image)
+            label = km.labels_[k]
+            video[label].write(image)
+        for v in video:
+            v.release()
 
     def t_SNE(self, df):
         print()
