@@ -39,10 +39,11 @@ class BData():
     def EDA_skelly(self):
         print()
         print("Skelly EDA")
+
         # index obtains the indexes of the columns by concatenating the strings "x", "y" and "p" with the numbers 1 to 18
         # and then concatenating the strings with the numbers 1 to 6 and putting them in a list
-        index = [j+str(i+1) for j in ["x", "y", "p"]
-                 for i in range(int((self.skeleton[0, :].shape[0]-1)/3))]
+        index = [j+str(i+1) for i in range(int((self.skeleton[0, :].shape[0]-1)/3))
+                 for j in ["x", "y", "p"]]
         # skeleton_df is a dataframe with the skeleton data and the indexes are the columns
         self.skeleton_df = pd.DataFrame(
             self.skeleton, columns=["f", *index])
@@ -53,6 +54,7 @@ class BData():
         # ts = self.skeleton_df.plot.scatter(x='x1', y='y1')
         # ts.plot()
         # plt.show()
+
         skelly_aux = []
         for i in range(18):
             # drop the p of the joints
@@ -209,7 +211,7 @@ class BData():
 
 
 def main():
-    data = BData("Data/girosmallveryslow2_openpose_complete.mat",
+    data = BData("Data/girosmallveryslow2_openpose.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat",
                  "Data/girosmallveryslow2.mp4")
     # data.EDA_VGG()
