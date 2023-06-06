@@ -66,8 +66,10 @@ class BData():
             # skelly is a dataframe with the skeleton data of the frame i
             skelly = self.skeleton_df[self.skeleton_df.f == i].drop(
                 columns="f")
+            # skelly = skelly.mask(skelly == 0).fillna(skelly.mean())
             middle_point = np.array([skelly["x1"],
                                      skelly["y1"]])
+
             if middle_point.shape[1] == 0:
                 n = 0
                 mean = [0]*34
@@ -106,9 +108,10 @@ class BData():
         reduced = pipeline.inverse_transform(
             pipeline.transform(self.VGG_df))
         # create a dataframe with the reduced data
-        self.VGG_df = pd.DataFrame(reduced)
+        self.VGG_pca = pd.DataFrame(reduced)
         # rank of vgg_df
-        print(np.linalg.matrix_rank(self.VGG_df))
+        print(np.linalg.matrix_rank(self.VGG_pca))
+        self.kmeans(self.VGG_pca, plot_type="2d")
 
     def PCA_skelly(self):
         print()
@@ -120,23 +123,42 @@ class BData():
         pipeline.fit(self.skeleton_df)
         reduced = pipeline.inverse_transform(
             pipeline.transform(self.skeleton_df))
-        self.skeleton_df = pd.DataFrame(reduced)
-        print(np.linalg.matrix_rank(self.skeleton_df))
+        self.skeleton_pca = pd.DataFrame(reduced)
+        print(np.linalg.matrix_rank(self.skeleton_pca))
+        self.kmeans(self.skeleton_pca, plot_type="3d")
 
-    def kmeans(self, df, n_clusters=15):
-        print()
-        print("Kmeans")
-        # apply kmeans with 6 clusters
-        km = KMeans(n_clusters=n_clusters, n_init="auto").fit(df)
-        # get the centroids of each cluster
-        clusters = km.cluster_centers_
-        # plot the data
+    def plot_2d(self, n_clusters, km, clusters, df):
+        plt.figure(num=None, figsize=(10, 10), dpi=100,
+                   facecolor='w', edgecolor='k')
+
+        for i in range(n_clusters):
+
+            print("The centroid of the cluster number " + str(i) +
+                  " is " + str(clusters[i, 0]) + " " + str(clusters[i, 1]))
+            plt.scatter(df[km.labels_ == i][0], df[km.labels_ == i][1],
+                        alpha=0.25, s=100, cmap='rainbow')
+            plt.scatter(clusters[i, 0], clusters[i, 1],
+                        s=100, alpha=0.30, color="black")
+            # find the frame with the minimum distance to the centroid
+            min_dista = 1000000
+            min_frame = 0
+            for j in range(df[km.labels_ == i][0].shape[0]):
+                dista = np.sqrt((df[km.labels_ == i][0].iloc[j] - clusters[i, 0])**2 + (df[km.labels_ == i]
+                                [1].iloc[j] - clusters[i, 1])**2)
+                if dista < min_dista:
+                    min_dista = dista
+                    min_frame = j
+            print("The frame with the minimum distance to the centroid is " + str(min_frame) + " so the frame is in the minute " +
+                  str(round(min_frame/60)) + " and second " + str(min_frame % 60) + " of the video")
+        plt.show()
+
+    def plot_3d(self, n_clusters, km, clusters, df):
         plt.figure(num=None, figsize=(10, 10), dpi=100,
                    facecolor='w', edgecolor='k')
 
         ax = plt.subplot(111, projection='3d')
         # another plot but 2d
-        for i in range(6):
+        for i in range(n_clusters):
             ax.scatter(df[km.labels_ == i][0], df[km.labels_ == i][1],
                        df[km.labels_ == i][2], alpha=0.25, s=100, cmap='rainbow')
             # plot the centroid of each cluster
@@ -156,32 +178,43 @@ class BData():
             print("The frame with the minimum distance to the centroid is " + str(min_frame) + " so the frame is in the minute " +
                   str(round(min_frame/60)) + " and second " + str(min_frame % 60) + " of the video")
         plt.show()
+
+    def kmeans(self, df, n_clusters=15, plot_type="2d", save_video=True):
+        print()
+        print("Kmeans")
+        # apply kmeans with 6 clusters
+        km = KMeans(n_clusters=n_clusters, n_init="auto").fit(df)
+        # get the centroids of each cluster
+        clusters = km.cluster_centers_
+        # plot the data
+        self.plot_2d(n_clusters, km, clusters, df) if plot_type == "2d" else self.plot_3d(
+            n_clusters, km, clusters, df)
+
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         height, width, layers = self.video[1].shape
         # Codec (e.g., 'XVID', 'MJPG', 'mp4v')
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        fps = 5.0
+        fps = 1.0
         video = [cv2.VideoWriter(f"Videos/cluster{i}.mp4", fourcc, fps, (width, height))
                  for i in range(max(km.labels_)+1)]
-        for k, image in enumerate(self.video):
-            if k > len(km.labels_)-1:
-                break
-            label = km.labels_[k]
-            video[label].write(image)
-        for v in video:
-            v.release()
+        if save_video:
+            print("Saving Videos")
+            for k, image in enumerate(self.video):
+                if k > len(km.labels_)-1:
+                    break
+                label = km.labels_[k]
+                video[label].write(image)
+            for v in video:
+                v.release()
 
     def t_SNE(self, df):
         print()
         print("t-SNE")
         # calculate the number of components of the t-SNE algorithm
-        tsne = TSNE(n_components=2, perplexity=50, verbose=2).fit_transform(df)
-        # plot the data
-        plt.figure(num=None, figsize=(10, 10), dpi=100,
-                   facecolor='w', edgecolor='k')
-        # ax = plt.subplot(111, projection='3d')
-        plt.scatter(tsne[:, 0], tsne[:, 1], alpha=0.25, s=100, cmap='rainbow')
-        plt.show()
+        tsne = TSNE(n_components=2, perplexity=50,
+                    verbose=2).fit_transform(df)
+        tsne = pd.DataFrame(tsne)
+        self.kmeans(tsne, plot_type="2d")
 
     def load_video(self, video_location):
         print("\nLoading Video")
@@ -211,18 +244,18 @@ class BData():
 
 
 def main():
-    data = BData("Data/girosmallveryslow2_openpose.mat",
+    data = BData("Data/girosmallveryslow2_openpose_complete.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat",
                  "Data/girosmallveryslow2.mp4")
     # data.EDA_VGG()
-    # data.PCA_VGG()
     # data.VGG_df = data.center_data(data.VGG_df)
-    # ata.kmeans(data.VGG_df)
-    data.EDA_skelly()
-    data.PCA_skelly()
-    data.skeleton_df = data.center_data(data.skeleton_df)
-    data.kmeans(data.skeleton_df)
+    # data.PCA_VGG()
     # data.t_SNE(data.VGG_df)
+    # data.kmeans(data.VGG_df)
+    data.EDA_skelly()
+    data.skeleton_df = data.center_data(data.skeleton_df)
+    data.PCA_skelly()
+    #
     data.t_SNE(data.skeleton_df)
 
 
