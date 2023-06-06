@@ -111,7 +111,7 @@ class BData():
         self.VGG_pca = pd.DataFrame(reduced)
         # rank of vgg_df
         print(np.linalg.matrix_rank(self.VGG_pca))
-        self.kmeans(self.VGG_pca, plot_type="2d")
+        self.kmeans(self.VGG_pca, plot_type="3d")
 
     def PCA_skelly(self):
         print()
@@ -125,7 +125,7 @@ class BData():
             pipeline.transform(self.skeleton_df))
         self.skeleton_pca = pd.DataFrame(reduced)
         print(np.linalg.matrix_rank(self.skeleton_pca))
-        self.kmeans(self.skeleton_pca, plot_type="3d")
+        self.kmeans(self.skeleton_pca, plot_type="3d", save_video=False)
 
     def plot_2d(self, n_clusters, km, clusters, df):
         plt.figure(num=None, figsize=(10, 10), dpi=100,
@@ -255,7 +255,6 @@ def main():
     data.EDA_skelly()
     data.skeleton_df = data.center_data(data.skeleton_df)
     data.PCA_skelly()
-    #
     data.t_SNE(data.skeleton_df)
 
 
