@@ -1,16 +1,28 @@
-# %%
-import scipy.io
-import pandas as pd
-import numpy as np
-from matplotlib import pyplot as plt
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.pipeline import Pipeline
-from sklearn.cluster import KMeans
-from sklearn.manifold import TSNE
-import cv2
+
+
 import os
-# %%
+import cv2
+from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans
+from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from matplotlib import pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.io
+#from sklearn.impute import KNNImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.linear_model import Ridge
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.impute import KNNImputer
+from sklearn.linear_model import LinearRegression
+
+
+
 
 
 class BData():
@@ -44,6 +56,8 @@ class BData():
         # and then concatenating the strings with the numbers 1 to 6 and putting them in a list
         index = [j+str(i+1) for i in range(int((self.skeleton[0, :].shape[0]-1)/3))
                  for j in ["x", "y", "p"]]
+        index1 = [j+str(i+1) for i in range(int((self.skeleton[0, :].shape[0]-1)/3))
+                  for j in ["x", "y"]]
         # skeleton_df is a dataframe with the skeleton data and the indexes are the columns
         self.skeleton_df = pd.DataFrame(
             self.skeleton, columns=["f", *index])
@@ -61,14 +75,26 @@ class BData():
             self.skeleton_df = self.skeleton_df.drop(
                 columns=["p"+str(i+1)])
 
-        skelly_aux = []
+        self.skeleton_df[self.skeleton_df.drop(
+            columns="f") == 0] = np.nan
+        #imputerX = IterativeImputer(max_iter=100,estimator=LinearRegression())
+        #imputerY = IterativeImputer(max_iter=100,estimator=LinearRegression())
+        imputerX = KNNImputer(n_neighbors=5)
+        imputerY = KNNImputer(n_neighbors=5)
+        if self.skeleton_df.isnull().values.any():
+            X_values=self.skeleton_df.loc[:,index1[::2]]
+            Y_values=self.skeleton_df.loc[:,index1[1::2]]
+            self.skeleton_df.loc[:,index1[::2]] = imputerX.fit_transform(X_values)
+            self.skeleton_df.loc[:,index1[1::2]]= imputerY.fit_transform(Y_values)
+            
         for i in range(int(self.skeleton_df["f"].max())):
             # skelly is a dataframe with the skeleton data of the frame i
             skelly = self.skeleton_df[self.skeleton_df.f == i].drop(
                 columns="f")
-            # skelly = skelly.mask(skelly == 0).fillna(skelly.mean())
+                
             middle_point = np.array([skelly["x1"],
                                      skelly["y1"]])
+
 
             if middle_point.shape[1] == 0:
                 n = 0
@@ -83,6 +109,7 @@ class BData():
                 skelly = ((skelly-middle_point.reshape(1, -1))
                           ).transpose().reshape(-1, 34)
                 mean = skelly.mean(axis=0)
+
 
                 variance = skelly.var(axis=0)
 
@@ -125,7 +152,7 @@ class BData():
             pipeline.transform(self.skeleton_df))
         self.skeleton_pca = pd.DataFrame(reduced)
         print(np.linalg.matrix_rank(self.skeleton_pca))
-        self.kmeans(self.skeleton_pca, plot_type="3d", save_video=False)
+        self.kmeans(self.skeleton_pca, plot_type="3d")
 
     def plot_2d(self, n_clusters, km, clusters, df):
         plt.figure(num=None, figsize=(10, 10), dpi=100,
@@ -214,7 +241,7 @@ class BData():
         tsne = TSNE(n_components=2, perplexity=50,
                     verbose=2).fit_transform(df)
         tsne = pd.DataFrame(tsne)
-        self.kmeans(tsne, plot_type="2d")
+        self.kmeans(tsne, plot_type="2d", save_video=False)
 
     def load_video(self, video_location):
         print("\nLoading Video")
@@ -244,7 +271,7 @@ class BData():
 
 
 def main():
-    data = BData("Data/girosmallveryslow2_openpose_complete.mat",
+    data = BData("Data/girosmallveryslow2_openpose.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat",
                  "Data/girosmallveryslow2.mp4")
     # data.EDA_VGG()
