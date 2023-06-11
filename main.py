@@ -20,6 +20,7 @@ from sklearn.linear_model import Ridge
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
+import argparse
 
 
 
@@ -79,8 +80,8 @@ class BData():
             columns="f") == 0] = np.nan
         # imputerX = IterativeImputer()
         # imputerY = IterativeImputer()
-        imputerX = KNNImputer(n_neighbors=18,weights="distance")
-        imputerY = KNNImputer(n_neighbors=18,weights="distance")
+        imputerX = KNNImputer(n_neighbors=2)
+        imputerY = KNNImputer(n_neighbors=2)
         if self.skeleton_df.isnull().values.any():
             X_values=self.skeleton_df.loc[:,index1[::2]]
             Y_values=self.skeleton_df.loc[:,index1[1::2]]
@@ -275,15 +276,32 @@ def main():
     data = BData("Data/girosmallveryslow2_openpose.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat",
                  "Data/girosmallveryslow2.mp4")
-    # data.EDA_VGG()
-    # data.VGG_df = data.center_data(data.VGG_df)
-    # data.PCA_VGG()
-    # data.t_SNE(data.VGG_df)
-    # data.kmeans(data.VGG_df)
-    data.EDA_skelly()
-    data.skeleton_df = data.center_data(data.skeleton_df)
-    # data.PCA_skelly()
-    data.t_SNE(data.skeleton_df)
+    parser = argparse.ArgumentParser(description='Simple argument parser')
+
+    # Add the "-vgg" option
+    parser.add_argument('-vgg', choices=['pca', 't-sne'], help='Enable VGG option')
+
+    # Add the "skeleton" option with choices for PCA and t-sne
+    parser.add_argument('-skeleton', choices=['pca', 't-sne'], help='Skeleton option')
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # VGG Options
+    if args.vgg:
+        data.EDA_VGG()
+        if args.vgg=='pca':
+            data.PCA_VGG()
+        elif args.vgg=='t-sne':
+            data.t_SNE(data.VGG_df)
+
+    #Skeleton Options
+    if args.skeleton:
+        data.EDA_skelly()
+        if args.skeleton == 'pca':
+            data.PCA_skelly()
+        elif args.skeleton == 't-sne':
+            data.t_SNE(data.skeleton_df)
 
 
 if __name__ == '__main__':
