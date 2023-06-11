@@ -8,3 +8,6 @@ This is a Python script that process RAI’s Media Coverage of the Giro D'Italia
     - `{pca,t-sne}`: Choose between PCA and t-SNE for the OpenPose or VGG database.
     - `mat`: .mat file for the OpenPose or VGG .
     - `video`: .mp4 file for the video.
+3. Example:
+    `python main.py -skeleton t-sne Data/girosmallveryslow2_openpose.mat Data/girosmallveryslow2.mp4`
+

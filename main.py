@@ -204,7 +204,7 @@ class BData():
                   str(round(min_frame/60)) + " and second " + str(min_frame % 60) + " of the video")
         plt.show()
 
-    def kmeans(self, df, n_clusters=27, plot_type="2d", save_video=True):
+    def kmeans(self, df, n_clusters=30, plot_type="2d", save_video=True):
         print()
         print("Kmeans")
         # apply kmeans with 6 clusters
