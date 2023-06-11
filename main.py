@@ -79,8 +79,8 @@ class BData():
             columns="f") == 0] = np.nan
         # imputerX = IterativeImputer()
         # imputerY = IterativeImputer()
-        imputerX = KNNImputer(n_neighbors=8)
-        imputerY = KNNImputer(n_neighbors=8)
+        imputerX = KNNImputer(n_neighbors=18,weights="distance")
+        imputerY = KNNImputer(n_neighbors=18,weights="distance")
         if self.skeleton_df.isnull().values.any():
             X_values=self.skeleton_df.loc[:,index1[::2]]
             Y_values=self.skeleton_df.loc[:,index1[1::2]]
@@ -207,7 +207,7 @@ class BData():
                   str(round(min_frame/60)) + " and second " + str(min_frame % 60) + " of the video")
         plt.show()
 
-    def kmeans(self, df, n_clusters=15, plot_type="2d", save_video=True):
+    def kmeans(self, df, n_clusters=27, plot_type="2d", save_video=True):
         print()
         print("Kmeans")
         # apply kmeans with 6 clusters
