@@ -77,23 +77,24 @@ class BData():
 
         self.skeleton_df[self.skeleton_df.drop(
             columns="f") == 0] = np.nan
-        #imputerX = IterativeImputer(max_iter=100,estimator=LinearRegression())
-        #imputerY = IterativeImputer(max_iter=100,estimator=LinearRegression())
-        imputerX = KNNImputer(n_neighbors=5)
-        imputerY = KNNImputer(n_neighbors=5)
+        # imputerX = IterativeImputer()
+        # imputerY = IterativeImputer()
+        imputerX = KNNImputer(n_neighbors=8)
+        imputerY = KNNImputer(n_neighbors=8)
         if self.skeleton_df.isnull().values.any():
             X_values=self.skeleton_df.loc[:,index1[::2]]
             Y_values=self.skeleton_df.loc[:,index1[1::2]]
             self.skeleton_df.loc[:,index1[::2]] = imputerX.fit_transform(X_values)
             self.skeleton_df.loc[:,index1[1::2]]= imputerY.fit_transform(Y_values)
+            # self.skeleton_df.loc[:,index1[::1]] = imputerX.fit_transform(self.skeleton_df.loc[:,index1[::1]])
             
         for i in range(int(self.skeleton_df["f"].max())):
             # skelly is a dataframe with the skeleton data of the frame i
             skelly = self.skeleton_df[self.skeleton_df.f == i].drop(
                 columns="f")
                 
-            middle_point = np.array([skelly["x1"],
-                                     skelly["y1"]])
+            middle_point = np.array([skelly["x2"],
+                                     skelly["y2"]])
 
 
             if middle_point.shape[1] == 0:
@@ -104,7 +105,7 @@ class BData():
             else:
                 n = len(middle_point)
                 skelly = skelly.drop(
-                    columns=["x1", "y1"]).transpose().values.reshape(
+                    columns=["x2", "y2"]).transpose().values.reshape(
                     -1, middle_point.shape[1]*2)
                 skelly = ((skelly-middle_point.reshape(1, -1))
                           ).transpose().reshape(-1, 34)
@@ -241,7 +242,7 @@ class BData():
         tsne = TSNE(n_components=2, perplexity=50,
                     verbose=2).fit_transform(df)
         tsne = pd.DataFrame(tsne)
-        self.kmeans(tsne, plot_type="2d", save_video=False)
+        self.kmeans(tsne, plot_type="2d")
 
     def load_video(self, video_location):
         print("\nLoading Video")
@@ -281,7 +282,7 @@ def main():
     # data.kmeans(data.VGG_df)
     data.EDA_skelly()
     data.skeleton_df = data.center_data(data.skeleton_df)
-    data.PCA_skelly()
+    # data.PCA_skelly()
     data.t_SNE(data.skeleton_df)
 
 
