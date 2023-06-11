@@ -29,12 +29,7 @@ import argparse
 class BData():
     def __init__(self, skeleton_location, VGG_location, video_location):
         print("Loading data")
-        self.skelly = []
-        self.skeleton = np.array(
-            scipy.io.loadmat(skeleton_location)["skeldata"])[:, 1:].transpose()
-        self.VGG = np.array(scipy.io.loadmat(
-            VGG_location)["features"]).transpose()
-        self.load_video(video_location)
+        
 
     def center_data(self, df):
         print()
@@ -57,38 +52,38 @@ class BData():
         # and then concatenating the strings with the numbers 1 to 6 and putting them in a list
         index = [j+str(i+1) for i in range(int((self.skeleton[0, :].shape[0]-1)/3))
                  for j in ["x", "y", "p"]]
-        index1 = [j+str(i+1) for i in range(int((self.skeleton[0, :].shape[0]-1)/3))
-                  for j in ["x", "y"]]
         # skeleton_df is a dataframe with the skeleton data and the indexes are the columns
         self.skeleton_df = pd.DataFrame(
             self.skeleton, columns=["f", *index])
         # describe the data
-        # plot the data
-        max_frame = max([
-            self.skeleton_df[self.skeleton_df.f == i].shape[0] for i in range(int(self.skeleton_df["f"].max()))])
-        # ts = self.skeleton_df.plot.scatter(x='x1', y='y1')
-        # ts.plot()
-        # plt.show()
+        print(self.skeleton_df.describe())
 
-        skelly_aux = []
-        for i in range(18):
-            # drop the p of the joints
-            self.skeleton_df = self.skeleton_df.drop(
-                columns=["p"+str(i+1)])
 
+    def missing_data(self):
+        print()
+        print("Skelly Missing Data")
+        index1 = [j+str(i+1) for i in range(int((self.skeleton[0, :].shape[0]-1)/3))
+                  for j in ["x", "y"]]
         self.skeleton_df[self.skeleton_df.drop(
             columns="f") == 0] = np.nan
-        # imputerX = IterativeImputer()
-        # imputerY = IterativeImputer()
         imputerX = KNNImputer(n_neighbors=2)
         imputerY = KNNImputer(n_neighbors=2)
         if self.skeleton_df.isnull().values.any():
+
             X_values=self.skeleton_df.loc[:,index1[::2]]
             Y_values=self.skeleton_df.loc[:,index1[1::2]]
             self.skeleton_df.loc[:,index1[::2]] = imputerX.fit_transform(X_values)
             self.skeleton_df.loc[:,index1[1::2]]= imputerY.fit_transform(Y_values)
             # self.skeleton_df.loc[:,index1[::1]] = imputerX.fit_transform(self.skeleton_df.loc[:,index1[::1]])
-            
+    def data_manipulation(self):
+        print("\nSkelly Data Manpulation")
+        skelly_aux = []
+        for i in range(int((self.skeleton[0, :].shape[0]-1)/3)):
+            # drop the p of the joints
+            self.skeleton_df = self.skeleton_df.drop(
+                columns=["p"+str(i+1)])
+
+        
         for i in range(int(self.skeleton_df["f"].max())):
             # skelly is a dataframe with the skeleton data of the frame i
             skelly = self.skeleton_df[self.skeleton_df.f == i].drop(
@@ -121,6 +116,7 @@ class BData():
 
         self.skeleton_df = pd.DataFrame(
             skelly_aux)
+            
 
     def PCA_VGG(self):
         print()
@@ -218,7 +214,8 @@ class BData():
         # plot the data
         self.plot_2d(n_clusters, km, clusters, df) if plot_type == "2d" else self.plot_3d(
             n_clusters, km, clusters, df)
-
+        
+        os.makedirs("Videos", exist_ok=True)
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         height, width, layers = self.video[1].shape
         # Codec (e.g., 'XVID', 'MJPG', 'mp4v')
@@ -276,20 +273,26 @@ def main():
     data = BData("Data/girosmallveryslow2_openpose.mat",
                  "Data/girosmallveryslow2_vggfeatures.mat",
                  "Data/girosmallveryslow2.mp4")
-    parser = argparse.ArgumentParser(description='Simple argument parser')
+    parser = argparse.ArgumentParser(description='Argument parser')
 
     # Add the "-vgg" option
-    parser.add_argument('-vgg', choices=['pca', 't-sne'], help='Enable VGG option')
+    parser.add_argument('-vgg', choices=['pca', 't-sne'], help='VGG option')
 
     # Add the "skeleton" option with choices for PCA and t-sne
-    parser.add_argument('-skeleton', choices=['pca', 't-sne'], help='Skeleton option')
+    parser.add_argument('-skeleton', choices=['pca', 't-sne'], help='Openpose option')
 
+    parser.add_argument('mat', help='Mat location')
+    parser.add_argument('video', help='Video location')
     # Parse the command-line arguments
     args = parser.parse_args()
-
+    data.load_video(args.video)
     # VGG Options
     if args.vgg:
+        data.VGG = np.array(scipy.io.loadmat(
+            args.mat)["features"]).transpose()
         data.EDA_VGG()
+        data.center_data()
+
         if args.vgg=='pca':
             data.PCA_VGG()
         elif args.vgg=='t-sne':
@@ -297,11 +300,17 @@ def main():
 
     #Skeleton Options
     if args.skeleton:
+        data.skeleton = np.array(
+            scipy.io.loadmat(args.mat)["skeldata"])[:, 1:].transpose()
         data.EDA_skelly()
+        data.missing_data()
+        data.data_manipulation()
         if args.skeleton == 'pca':
             data.PCA_skelly()
         elif args.skeleton == 't-sne':
             data.t_SNE(data.skeleton_df)
+        
+        
 
 
 if __name__ == '__main__':
