@@ -1,0 +1,13 @@
+# Giro D’Italia: Analysis of RAI’s Media Coverage
+This is a Python script that process RAI’s Media Coverage of the Giro D'Italia.
+## Usage
+1. Download Code
+2. Run the script with the desired options and file locations:
+    - `-vgg`: Use VGG as the database.
+    - `-skeleton`: Use OpenPose as the database.
+    - `{pca,t-sne}`: Choose between PCA and t-SNE for the OpenPose or VGG database.
+    - `mat`: .mat file for the OpenPose or VGG .
+    - `video`: .mp4 file for the video.
+3. Example:
+    `python main.py -skeleton t-sne Data/girosmallveryslow2_openpose.mat Data/girosmallveryslow2.mp4`
+
