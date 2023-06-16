@@ -57,9 +57,26 @@ class BData():
         self.skeleton_df = pd.DataFrame(
             self.skeleton, columns=["f", *index])
         # describe the data
+        
+        self.Outliers()    
         print(self.skeleton_df.describe())
 
-
+    def Outliers(self):
+        j=0
+        os.makedirs("Outliers", exist_ok=True)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        height, width, layers = self.video[1].shape
+        # Codec (e.g., 'XVID', 'MJPG', 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fps = 2
+        video = cv2.VideoWriter(f"Outliers/video.mp4", fourcc, fps, (width, height))
+        for i in range(1,int(max(self.skeleton_df["f"]))):
+            if self.skeleton_df[self.skeleton_df.f==i].empty:
+                self.skeleton_df=self.skeleton_df.loc[self.skeleton_df['f'] != i]
+                video.write(self.video[i-j])
+                self.video.pop(i-j)
+                j+=1
+        video.release()
     def missing_data(self):
         print()
         print("Skelly Missing Data")
@@ -223,7 +240,7 @@ class BData():
         height, width, layers = self.video[1].shape
         # Codec (e.g., 'XVID', 'MJPG', 'mp4v')
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        fps = 1.0
+        fps = 10.0
         video = [cv2.VideoWriter(f"Videos/cluster{i}.mp4", fourcc, fps, (width, height))
                  for i in range(max(km.labels_)+1)]
         if save_video:
@@ -312,7 +329,7 @@ def main():
     #Skeleton Options
     if args.skeleton:
         data.skeleton = np.array(
-            scipy.io.loadmat(args.mat)["skeldata"]).transpose()
+            scipy.io.loadmat(args.mat)["skeldata"])[:,1:].transpose()
         data.EDA_skelly()
         data.missing_data()
         data.data_manipulation()
