@@ -21,6 +21,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 import argparse
+from yellowbrick.cluster import KElbowVisualizer
 
 
 
@@ -136,7 +137,8 @@ class BData():
         self.VGG_pca = pd.DataFrame(reduced)
         # rank of vgg_df
         print(np.linalg.matrix_rank(self.VGG_pca))
-        self.kmeans(self.VGG_pca, plot_type="3d")
+        self.kmeans(self.VGG_pca, plot_type="3d",n_clusters=6)
+        #self.n_clustering_number(self.VGG_pca)
 
     def PCA_skelly(self):
         print()
@@ -150,7 +152,8 @@ class BData():
             pipeline.transform(self.skeleton_df))
         self.skeleton_pca = pd.DataFrame(reduced)
         print(np.linalg.matrix_rank(self.skeleton_pca))
-        self.kmeans(self.skeleton_pca, plot_type="3d")
+        self.kmeans(self.skeleton_pca, plot_type="3d",n_clusters=3)
+        #self.n_clustering_number()
 
     def plot_2d(self, n_clusters, km, clusters, df):
         plt.figure(num=None, figsize=(10, 10), dpi=100,
@@ -233,14 +236,15 @@ class BData():
             for v in video:
                 v.release()
 
-    def t_SNE(self, df):
+    def t_SNE(self, df,n_clusters):
         print()
         print("t-SNE")
         # calculate the number of components of the t-SNE algorithm
         tsne = TSNE(n_components=2, perplexity=50,
                     verbose=2).fit_transform(df)
         tsne = pd.DataFrame(tsne)
-        self.kmeans(tsne, plot_type="2d")
+        self.kmeans(tsne, plot_type="2d",n_clusters=n_clusters)
+        #self.n_clustering_number(tsne)
 
     def load_video(self, video_location):
         print("\nLoading Video")
@@ -252,7 +256,7 @@ class BData():
         if not video.isOpened():
             print('Error opening video file')
             return
-
+        i=0
         # Read and Save frames from the video
         while True:
             # Read a frame from the video
@@ -260,12 +264,19 @@ class BData():
 
             if not ret:
                 break
-
+            if i!=0:
             # Save the frame
-            self.video.append(frame)
+                self.video.append(frame)
+            i=1
 
         video.release()
         cv2.destroyAllWindows()
+    def n_clustering_number(self,df):
+        model = KMeans()
+        visualizer = KElbowVisualizer(model, k=(1,20))
+        visualizer.fit(df)
+        visualizer.show()
+        plt.show()
 # %%
 
 
@@ -291,24 +302,24 @@ def main():
         data.VGG = np.array(scipy.io.loadmat(
             args.mat)["features"]).transpose()
         data.EDA_VGG()
-        data.center_data()
+        data.center_data(data.VGG_df)
 
         if args.vgg=='pca':
             data.PCA_VGG()
         elif args.vgg=='t-sne':
-            data.t_SNE(data.VGG_df)
+            data.t_SNE(data.VGG_df,4)
 
     #Skeleton Options
     if args.skeleton:
         data.skeleton = np.array(
-            scipy.io.loadmat(args.mat)["skeldata"])[:, 1:].transpose()
+            scipy.io.loadmat(args.mat)["skeldata"]).transpose()
         data.EDA_skelly()
         data.missing_data()
         data.data_manipulation()
         if args.skeleton == 'pca':
             data.PCA_skelly()
         elif args.skeleton == 't-sne':
-            data.t_SNE(data.skeleton_df)
+            data.t_SNE(data.skeleton_df,4)
         
         
 
