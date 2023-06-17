@@ -75,6 +75,11 @@ class BData():
                 video.write(self.video[i-j])
                 self.video.pop(i-j)
                 j+=1
+            if (self.skeleton_df[self.skeleton_df.f==i]["x2"]==0).any():
+                video.write(self.video[i-j])
+                self.video.pop(i-j)
+                j+=1
+
         video.release()
     def missing_data(self):
         print()
@@ -254,8 +259,8 @@ class BData():
         tsne = TSNE(n_components=2, perplexity=50,
                     verbose=2).fit_transform(df)
         tsne = pd.DataFrame(tsne)
-        self.kmeans(tsne, plot_type="2d",n_clusters=n_clusters)
-        #self.n_clustering_number(tsne)
+        #self.kmeans(tsne, plot_type="2d",n_clusters=n_clusters)
+        self.n_clustering_number(tsne)
 
     def load_video(self, video_location):
         print("\nLoading Video")
@@ -327,6 +332,7 @@ def main():
         data.EDA_skelly()
         data.missing_data()
         data.data_manipulation()
+        
         if args.skeleton == 'pca':
             data.PCA_skelly()
         elif args.skeleton == 't-sne':
