@@ -259,8 +259,8 @@ class BData():
         tsne = TSNE(n_components=2, perplexity=50,
                     verbose=2).fit_transform(df)
         tsne = pd.DataFrame(tsne)
-        #self.kmeans(tsne, plot_type="2d",n_clusters=n_clusters)
-        self.n_clustering_number(tsne)
+        self.kmeans(tsne, plot_type="2d",n_clusters=n_clusters)
+        #self.n_clustering_number(tsne)
 
     def load_video(self, video_location):
         print("\nLoading Video")
@@ -294,6 +294,28 @@ class BData():
         visualizer.show()
         plt.show()
 # %%
+def plot_svd_error(df):
+    # Perform SVD on the input matrix
+    U, s, V = np.linalg.svd(df)
+
+    # Calculate the approximation error for different ranks
+    rank = np.arange(1, min(df.shape) + 1)
+    error = []
+    for r in rank:
+        # Reconstruct the matrix using r singular values
+        Ar = U[:, :r] @ np.diag(s[:r]) @ V[:r, :]
+
+        # Calculate Frobenius norm of the error
+        err = np.linalg.norm(df - Ar, 'fro')
+        error.append(err)
+
+    # Plot the error graph
+    plt.plot(rank, error)
+    plt.xlabel('Rank')
+    plt.ylabel('Approximation Error')
+    plt.title('SVD Approximation Error')
+    plt.grid(True)
+    plt.show()
 
 
 def main():
@@ -319,7 +341,7 @@ def main():
             args.mat)["features"]).transpose()
         data.EDA_VGG()
         data.center_data(data.VGG_df)
-
+        plot_svd_error(data.VGG_df)
         if args.vgg=='pca':
             data.PCA_VGG()
         elif args.vgg=='t-sne':
@@ -332,6 +354,7 @@ def main():
         data.EDA_skelly()
         data.missing_data()
         data.data_manipulation()
+        plot_svd_error(data.skeleton_df)
         
         if args.skeleton == 'pca':
             data.PCA_skelly()
