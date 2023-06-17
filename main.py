@@ -72,7 +72,6 @@ class BData():
         video = cv2.VideoWriter(f"Outliers/video.mp4", fourcc, fps, (width, height))
         for i in range(1,int(max(self.skeleton_df["f"]))):
             if self.skeleton_df[self.skeleton_df.f==i].empty:
-                self.skeleton_df=self.skeleton_df.loc[self.skeleton_df['f'] != i]
                 video.write(self.video[i-j])
                 self.video.pop(i-j)
                 j+=1
@@ -111,12 +110,7 @@ class BData():
                                      skelly["y2"]])
 
 
-            if middle_point.shape[1] == 0:
-                n = 0
-                mean = [0]*34
-                variance = [0]*34
-
-            else:
+            if middle_point.shape[1] != 0:
                 n = len(middle_point)
                 skelly = skelly.drop(
                     columns=["x2", "y2"]).transpose().values.reshape(
@@ -130,7 +124,7 @@ class BData():
 
             # autocorrolation_string = []
 
-            skelly_aux.append([n, *mean, *variance])
+                skelly_aux.append([n, *mean, *variance])
 
         self.skeleton_df = pd.DataFrame(
             skelly_aux)
@@ -329,7 +323,7 @@ def main():
     #Skeleton Options
     if args.skeleton:
         data.skeleton = np.array(
-            scipy.io.loadmat(args.mat)["skeldata"])[:,1:].transpose()
+            scipy.io.loadmat(args.mat)["skeldata"])[:,:].transpose()
         data.EDA_skelly()
         data.missing_data()
         data.data_manipulation()
